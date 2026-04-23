@@ -2,6 +2,8 @@
 
 > Agents commit on turn boundaries, not thought boundaries. `atropos` reads the mess an agent leaves behind, drops dead paths, clusters survivors into logical commits, and normalizes authorship — so history reads like *you* wrote it. Never force-pushes. Always reversible. The cut is final, but recoverable.
 
+![demo](./assets/demo.gif)
+
 ## What it does
 
 Reshapes a typical agent-authored branch from this:
