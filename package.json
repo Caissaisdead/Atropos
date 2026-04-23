@@ -1,8 +1,28 @@
 {
   "name": "atropos-cli",
-  "version": "0.0.0-dev",
+  "version": "0.1.0",
   "description": "Reshape messy agent-authored git history into clean, reviewable commits.",
   "license": "MIT",
+  "author": "Caissaisdead",
+  "homepage": "https://github.com/Caissaisdead/Atropos#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Caissaisdead/Atropos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Caissaisdead/Atropos/issues"
+  },
+  "keywords": [
+    "git",
+    "history",
+    "rewrite",
+    "rebase",
+    "squash",
+    "agent",
+    "claude",
+    "cleanup",
+    "cli"
+  ],
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -22,7 +42,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup",
