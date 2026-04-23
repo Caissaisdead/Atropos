@@ -28,10 +28,12 @@ test(api): cover /invoices happy + error paths
 ## Install
 
 ```sh
-npm install -g atropos
+npm install -g atropos-cli
 # or run via npx:
-npx atropos
+npx atropos-cli
 ```
+
+The package name is `atropos-cli` (the unscoped `atropos` is taken on npm by an unrelated UI library). The command you actually run is `atropos`.
 
 Requires Node ≥ 20. macOS and Linux supported; Windows via WSL only.
 

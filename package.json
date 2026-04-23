@@ -1,5 +1,5 @@
 {
-  "name": "atropos",
+  "name": "atropos-cli",
   "version": "0.0.0-dev",
   "description": "Reshape messy agent-authored git history into clean, reviewable commits.",
   "license": "MIT",
