@@ -2,8 +2,8 @@ import { listMergeShasInRange, listShasInRange, readCommits } from "../git/commi
 import {
   currentBranch,
   defaultBaseRef,
-  mergeBase,
   revParse,
+  tryMergeBase,
   tryRevParse,
   upstreamOf,
 } from "../git/refs.js";
@@ -75,7 +75,11 @@ export async function resolveRange(input: CollectInput): Promise<Range> {
 export async function collectRange(input: CollectInput = {}): Promise<CollectResult> {
   const opts = input.opts ?? {};
   const range = await resolveRange(input);
-  const mb = await mergeBase(range.base, range.head, opts);
+  // Orphan branches (no common ancestor) are legitimate; fall back to the
+  // explicit base as the boundary so `<base>..<head>` still gives the
+  // expected commit set.
+  const maybeMb = await tryMergeBase(range.base, range.head, opts);
+  const mb = maybeMb ?? range.base;
 
   const shas = await listShasInRange(mb, range.head, opts);
   const merges = await listMergeShasInRange(mb, range.head, opts);

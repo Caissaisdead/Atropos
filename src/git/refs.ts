@@ -17,6 +17,19 @@ export async function mergeBase(a: string, b: string, opts: GitOptions = {}): Pr
   return asSha(out.trim());
 }
 
+export async function tryMergeBase(
+  a: string,
+  b: string,
+  opts: GitOptions = {},
+): Promise<Sha | null> {
+  // `git merge-base` exits 1 (and prints nothing) when the two commits share
+  // no common ancestor — a legitimate result for orphan branches, not an error.
+  const r = await gitRaw(["merge-base", a, b], opts);
+  if (r.exitCode !== 0) return null;
+  const out = r.stdout.trim();
+  return out ? asSha(out) : null;
+}
+
 export async function currentBranch(opts: GitOptions = {}): Promise<string> {
   const r = await gitRaw(["symbolic-ref", "--short", "HEAD"], opts);
   if (r.exitCode !== 0) {
