@@ -1,1 +1,10 @@
+node_modules/
+dist/
+coverage/
+.atropos/
 .stale-cache/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

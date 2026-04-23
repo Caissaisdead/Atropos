@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: typecheck + tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Configure git identity (fixtures need one)
+        run: |
+          git config --global user.name "ci"
+          git config --global user.email "ci@example.com"
+          git config --global init.defaultBranch main
+          git config --global commit.gpgsign false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Approve esbuild build script
+        run: pnpm approve-builds esbuild || true
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test (mocked LLM, all fixtures, T1–T7 matrix)
+        run: pnpm test
+        env:
+          # Make sure the suite never accidentally hits a real API in CI.
+          ANTHROPIC_API_KEY: ""
+
+      - name: Build
+        run: pnpm build

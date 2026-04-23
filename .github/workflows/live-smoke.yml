@@ -1,0 +1,46 @@
+name: live-smoke
+
+# Real-API smoke test against Anthropic. Costs money, so it is manual-only.
+# Trigger from the Actions tab; requires the ANTHROPIC_API_KEY repo secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Anthropic model id (defaults to claude-sonnet-4-6)
+        required: false
+        default: claude-sonnet-4-6
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "ci"
+          git config --global user.email "ci@example.com"
+          git config --global init.defaultBranch main
+          git config --global commit.gpgsign false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Live smoke test against ${{ inputs.model }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUN_LIVE: "1"
+          ATROPOS_MODEL: ${{ inputs.model }}
+        run: pnpm test:live -- tests/integration/llm.test.ts
