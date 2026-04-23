@@ -86,7 +86,7 @@ function buildClusterInput(b: BuildingCluster, idx: number): ClusterInput {
   const verb = computeVerb(allChanges, b.liveFiles);
   const type = pickType(b.members);
   const scope = pickScope(liveFiles);
-  const subject = composeSubject(verb, liveFiles);
+  const subject = composeSubject(b.members, verb, liveFiles);
 
   const cluster: ClusterInput = {
     id: `c${idx + 1}`,
@@ -106,8 +106,10 @@ function pickType(members: readonly Commit[]): CommitType {
     const t = parseTypeFromSubject(m.subject);
     if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
   }
+  // Default to "chore" when no member has an explicit conventional-commits type;
+  // otherwise pick the most common (ties broken by COMMIT_TYPES order).
   let best: CommitType = "chore";
-  let bestN = -1;
+  let bestN = 0;
   for (const t of COMMIT_TYPES) {
     const n = counts.get(t) ?? 0;
     if (n > bestN) {
@@ -134,12 +136,37 @@ function pickScope(files: readonly string[]): string | undefined {
   return last && last.length > 0 ? last : dir;
 }
 
-function composeSubject(verb: string, files: readonly string[]): string {
+function composeSubject(
+  members: readonly Commit[],
+  verb: string,
+  files: readonly string[],
+): string {
+  // Prefer a real original subject when one is decent — agents often write
+  // perfectly serviceable subjects ("Phase 1: Core API + Foundation") and
+  // re-synthesizing a generic "update src" throws that signal away.
+  const fromOriginal = pickBestOriginalSubject(members);
+  if (fromOriginal) return truncateSubject(fromOriginal, 72);
+
+  // Fallback: synthesize from verb + top-dirs.
   if (files.length === 0) return `${verb} unspecified`;
   const dirs = uniqueSorted(files.map(topDir));
   const joined = dirs.length === 1 ? (dirs[0] === "." ? files[0]! : dirs[0]!) : dirs.slice(0, 3).join(", ");
   const rough = `${verb} ${joined}`;
   return truncateSubject(rough, 72);
+}
+
+const WIPISH_PREFIX = /^(wip\b|fix\s+typo\b|update\b|tweak\b|tmp\b|temp\b|todo\b|merge\b|revert\b)/i;
+const TYPE_PREFIX = /^([a-z]+)(?:\([^)]+\))?[:!]\s+/;
+
+function pickBestOriginalSubject(members: readonly Commit[]): string | null {
+  for (const m of members) {
+    const cleaned = (m.subject ?? "").replace(TYPE_PREFIX, "").trim();
+    if (cleaned.length < 12) continue;
+    if (WIPISH_PREFIX.test(cleaned)) continue;
+    const first = cleaned[0]!;
+    return first.toLowerCase() + cleaned.slice(1).replace(/\.+$/, "");
+  }
+  return null;
 }
 
 function truncateSubject(s: string, max: number): string {
