@@ -13,7 +13,7 @@ interface GlobalOpts {
   debugCollect?: string | true;
 }
 
-const VERSION = "0.0.0-dev";
+const VERSION = "0.1.0";
 
 export async function main(argv: string[] = process.argv): Promise<void> {
   const program = new Command();
@@ -137,11 +137,5 @@ function installSignalHandlers(): void {
   process.once("SIGTERM", onSignal);
 }
 
-const isMain =
-  process.argv[1] &&
-  (import.meta.url === `file://${process.argv[1]}` ||
-    import.meta.url.endsWith(process.argv[1].replace(/^.*\//, "")));
-
-if (isMain) {
-  main().catch(handleError);
-}
+// This file is only loaded via the `bin` entry — always run.
+main().catch(handleError);

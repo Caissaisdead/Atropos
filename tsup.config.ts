@@ -13,8 +13,5 @@ export default defineConfig({
   clean: true,
   splitting: false,
   shims: false,
-  banner: ({ format }) =>
-    format === "cjs"
-      ? {}
-      : { js: "#!/usr/bin/env node" },
+  // Shebang is in src/cli/index.ts and flows through to both bundles.
 });
