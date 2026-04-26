@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { gitTopLevel } from "../git/guards.js";
+import { loadAtroposConfig } from "../config/load.js";
 import { gitRaw, type GitOptions } from "../git/shell.js";
 import type { Identity } from "../git/types.js";
 import { AtroposError } from "../util/errors.js";
@@ -50,27 +48,10 @@ export function parseAuthor(s: string): Identity | null {
 }
 
 async function readAtroposJsonAuthor(cwd?: string): Promise<Identity | null> {
-  let topLevel: string;
-  try {
-    topLevel = cwd ?? (await gitTopLevel({}));
-  } catch {
-    return null;
-  }
-  const path = join(topLevel, ".atropos.json");
-  let raw: string;
-  try {
-    raw = readFileSync(path, "utf8");
-  } catch {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(raw) as { authorship?: { author?: string | null } };
-    const author = parsed.authorship?.author;
-    if (!author) return null;
-    return parseAuthor(author);
-  } catch {
-    return null;
-  }
+  const cfg = await loadAtroposConfig(cwd ? { cwd } : {});
+  const author = cfg?.authorship?.author;
+  if (!author) return null;
+  return parseAuthor(author);
 }
 
 async function readGitConfigIdentity(opts: GitOptions): Promise<Identity | null> {

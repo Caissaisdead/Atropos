@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runApply } from "../apply/run.js";
+import { loadAtroposConfig } from "../config/load.js";
 import { asSha } from "../git/types.js";
 import { gitTopLevel } from "../git/guards.js";
 import type { PlannedCluster } from "../apply/types.js";
@@ -34,6 +35,9 @@ export async function applyCommand(opts: ApplyCliOptions): Promise<number> {
   const plan = parsePlan(planSrc);
   await assertPlanIsFresh(plan, {});
 
+  const cfg = await loadAtroposConfig();
+  const preserveFromConfig = cfg?.authorship?.normalize === false;
+
   const runOpts: Parameters<typeof runApply>[0] = {
     logger: opts.logger,
     targetAuthor: plan.authorship.targetAuthor,
@@ -43,7 +47,9 @@ export async function applyCommand(opts: ApplyCliOptions): Promise<number> {
   if (opts.allowDirty) runOpts.allowDirty = true;
   if (opts.rewritePushed) runOpts.rewritePushed = true;
   if (opts.author) runOpts.authorFlag = opts.author;
-  if (opts.preserveAgentAttribution) runOpts.preserveAgentAttribution = true;
+  if (opts.preserveAgentAttribution || preserveFromConfig) {
+    runOpts.preserveAgentAttribution = true;
+  }
 
   const result = await runApply(runOpts);
   if (opts.dryRun) {
