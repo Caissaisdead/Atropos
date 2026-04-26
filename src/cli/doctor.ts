@@ -76,11 +76,8 @@ export async function runDoctor(logger: Logger): Promise<DoctorReport> {
 
   const apiKey = process.env["ANTHROPIC_API_KEY"];
   if (apiKey && apiKey.length > 0) {
-    checks.push({
-      name: "ANTHROPIC_API_KEY",
-      status: "ok",
-      detail: `present (${apiKey.length} chars)`,
-    });
+    const ping = await pingApiKey(apiKey);
+    checks.push({ name: "ANTHROPIC_API_KEY", status: ping.status, detail: ping.detail });
   } else {
     checks.push({
       name: "ANTHROPIC_API_KEY",
@@ -92,6 +89,42 @@ export async function runDoctor(logger: Logger): Promise<DoctorReport> {
   const ok = checks.every((c) => c.status !== "fail");
   printReport(checks, logger);
   return { ok, checks };
+}
+
+interface PingResult {
+  status: "ok" | "warn" | "fail";
+  detail: string;
+}
+
+async function pingApiKey(apiKey: string): Promise<PingResult> {
+  const masked = `${apiKey.length} chars`;
+  try {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    const client = new Anthropic({ apiKey, timeout: 5000 });
+    await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1,
+      messages: [{ role: "user", content: "hi" }],
+    });
+    return { status: "ok", detail: `present, validated (${masked})` };
+  } catch (err) {
+    const status = (err as { status?: number }).status;
+    if (status === 401 || status === 403) {
+      return {
+        status: "fail",
+        detail: `auth rejected (HTTP ${status}) — key invalid or revoked`,
+      };
+    }
+    if (status === 429) {
+      return { status: "warn", detail: `rate-limited (key likely valid; ${masked})` };
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    const short = msg.length > 80 ? `${msg.slice(0, 80)}…` : msg;
+    return {
+      status: "warn",
+      detail: `present (${masked}) but ping failed — ${short}`,
+    };
+  }
 }
 
 function printReport(checks: DoctorCheck[], logger: Logger): void {
