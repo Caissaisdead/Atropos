@@ -13,7 +13,9 @@ interface GlobalOpts {
   debugCollect?: string | true;
 }
 
-const VERSION = "0.1.0";
+declare const __ATROPOS_VERSION__: string;
+const VERSION =
+  typeof __ATROPOS_VERSION__ !== "undefined" ? __ATROPOS_VERSION__ : "0.0.0-dev";
 
 export async function main(argv: string[] = process.argv): Promise<void> {
   const program = new Command();
